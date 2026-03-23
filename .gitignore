@@ -8,3 +8,15 @@ __pycache__/
 *.h5
 *.log
 .DS_Store
+
+# Python venv
+venv/
+backend/venv/
+
+# ML models
+*.pt
+*.pth
+
+# datasets
+frames/
+datasets/
