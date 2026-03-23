@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-[#0B0B0F] text-white;
+}
+
+/* BUTTON */
+.btn {
+  @apply px-5 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-purple-500 hover:scale-105 transition duration-300;
+}
+
+/* CARD */
+.card {
+  @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-4;
+}
+
+/* INPUT */
+.input {
+  @apply w-full p-3 bg-gray-800 rounded-lg outline-none;
+}
