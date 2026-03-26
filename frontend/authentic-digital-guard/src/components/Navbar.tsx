@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, LogOut } from 'lucide-react';
+import { Menu, X, LogOut, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const links = [
@@ -14,8 +14,14 @@ const links = [
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <motion.nav
@@ -42,12 +48,37 @@ const Navbar = () => {
               {l.label}
             </Link>
           ))}
-          {user ? (
-            <button onClick={logout} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
-              <LogOut className="w-4 h-4" /> Logout
-            </button>
+
+          {isAuthenticated ? (
+            <div className="flex items-center gap-4">
+              {/* User avatar/name */}
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/30 border border-border/50">
+                <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+                  <User className="w-3.5 h-3.5 text-primary" />
+                </div>
+                <span className="text-xs text-foreground font-medium truncate max-w-[100px]">
+                  {user?.name || 'User'}
+                </span>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                <LogOut className="w-4 h-4" /> Logout
+              </button>
+            </div>
           ) : (
-            <Link to="/login" className="glow-button text-xs py-2 px-5">Login</Link>
+            <div className="flex items-center gap-3">
+              <Link
+                to="/login"
+                className="text-sm text-muted-foreground hover:text-primary transition-colors font-medium"
+              >
+                Login
+              </Link>
+              <Link to="/signup" className="glow-button text-xs py-2 px-5">
+                Sign Up
+              </Link>
+            </div>
           )}
         </div>
 
@@ -77,14 +108,28 @@ const Navbar = () => {
                   {l.label}
                 </Link>
               ))}
-              {user ? (
-                <button onClick={() => { logout(); setOpen(false); }} className="text-sm text-muted-foreground hover:text-primary transition-colors text-left">
-                  Logout
-                </button>
+              {isAuthenticated ? (
+                <>
+                  <div className="flex items-center gap-2 text-sm text-foreground">
+                    <User className="w-4 h-4 text-primary" />
+                    {user?.name || 'User'}
+                  </div>
+                  <button
+                    onClick={() => { handleLogout(); setOpen(false); }}
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors text-left"
+                  >
+                    Logout
+                  </button>
+                </>
               ) : (
-                <Link to="/login" className="glow-button text-xs py-2 px-5 text-center" onClick={() => setOpen(false)}>
-                  Login
-                </Link>
+                <div className="flex flex-col gap-3">
+                  <Link to="/login" className="text-sm text-muted-foreground hover:text-primary" onClick={() => setOpen(false)}>
+                    Login
+                  </Link>
+                  <Link to="/signup" className="glow-button text-xs py-2 px-5 text-center" onClick={() => setOpen(false)}>
+                    Sign Up
+                  </Link>
+                </div>
               )}
             </div>
           </motion.div>

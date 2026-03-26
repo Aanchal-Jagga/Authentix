@@ -20,3 +20,11 @@ backend/venv/
 # datasets
 frames/
 datasets/
+
+# Any JSON credentials (Firebase, GCP, AWS, etc.)
+flowgenix-beeb3-firebase-adminsdk-fbsvc-174e1fa766.json
+*.json
+
+
+# Firebase service account (DO NOT push)
+serviceAccountKey.json

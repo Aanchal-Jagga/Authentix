@@ -4,33 +4,42 @@ import { AlertTriangle, CheckCircle2, Chrome, Eye } from 'lucide-react';
 import PageTransition from '@/components/PageTransition';
 import UploadBox from '@/components/UploadBox';
 import ScanAnimation from '@/components/ScanAnimation';
+import ConfidenceMeter from '@/components/ConfidenceMeter';
+import ErrorCard from '@/components/ErrorCard';
 import Footer from '@/components/Footer';
-
-type Result = { verdict: string; confidence: number; signals: string[] };
+import { detectGazeFrame, detectGazeVideo } from '@/services/api';
 
 const GazeDetection = () => {
   const [file, setFile] = useState<File | null>(null);
   const [scanning, setScanning] = useState(false);
-  const [result, setResult] = useState<Result | null>(null);
+  const [result, setResult] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
     if (!file) return;
     setScanning(true);
     setResult(null);
-    setTimeout(() => {
+    setError(null);
+
+    try {
+      const isVideo = file.type.startsWith('video/');
+      const data = isVideo ? await detectGazeVideo(file) : await detectGazeFrame(file);
+
+      if (data.error) {
+        setError(data.error);
+      } else {
+        setResult(data);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Analysis failed. Please try again.');
+    } finally {
       setScanning(false);
-      const suspicious = Math.random() > 0.4;
-      setResult({
-        verdict: suspicious ? 'Suspicious' : 'Normal',
-        confidence: suspicious ? 0.65 + Math.random() * 0.25 : 0.85 + Math.random() * 0.12,
-        signals: suspicious
-          ? ['Head-gaze mismatch', 'Low microsaccades', 'Gaze correction artifacts']
-          : ['Natural gaze patterns', 'Consistent microsaccades', 'No correction detected'],
-      });
-    }, 3500);
+    }
   };
 
-  const isSuspicious = result?.verdict === 'Suspicious';
+  const isSuspicious = result?.ai_gaze_detected;
+  const score = result?.score != null ? result.score : result?.final_score != null ? result.final_score : 0;
+  const scorePercent = score * 100;
 
   return (
     <PageTransition>
@@ -42,52 +51,88 @@ const GazeDetection = () => {
                 <Eye className="w-6 h-6 text-primary" />
                 <h1 className="font-display text-3xl sm:text-4xl font-bold gradient-text">Gaze Detection</h1>
               </div>
-              <p className="text-muted-foreground">Detect gaze manipulation and eye contact correction in videos.</p>
+              <p className="text-muted-foreground">Detect gaze manipulation and eye contact correction in images and videos.</p>
             </motion.div>
 
             <div className="glass-card p-6 sm:p-8">
-              <UploadBox label="Upload Video" accept="video/*" onFile={(f) => { setFile(f); setResult(null); }} />
-
-              {file && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4 text-sm text-muted-foreground">
-                  Selected: <span className="text-foreground">{file.name}</span>
-                </motion.div>
-              )}
+              <UploadBox label="Upload Image or Video" accept="image/*,video/*" onFile={(f) => { setFile(f); setResult(null); setError(null); }} />
 
               <button
                 onClick={handleAnalyze}
                 disabled={!file || scanning}
                 className="glow-button w-full mt-6 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {scanning ? 'Analyzing...' : 'Analyze Video'}
+                {scanning ? 'Analyzing...' : 'Analyze Gaze'}
               </button>
 
               <AnimatePresence>{scanning && <ScanAnimation />}</AnimatePresence>
 
+              {/* ERROR */}
               <AnimatePresence>
-                {result && (
-                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-8 glass-card p-6">
-                    <div className="text-center mb-6">
-                      <p className="text-xs font-display tracking-widest text-muted-foreground mb-2">GAZE ANALYSIS RESULT</p>
-                      <div className={`text-4xl font-display font-bold ${isSuspicious ? 'text-destructive' : 'text-primary'}`}>
-                        <span className="flex items-center justify-center gap-3">
+                {error && !scanning && (
+                  <div className="mt-8">
+                    <ErrorCard message={error} />
+                  </div>
+                )}
+              </AnimatePresence>
+
+              {/* RESULT */}
+              <AnimatePresence>
+                {result && !scanning && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.5 }}
+                    className={`mt-8 glass-card p-6 ${isSuspicious ? 'shadow-[0_0_30px_rgba(239,68,68,0.3)]' : 'shadow-[0_0_30px_rgba(34,197,94,0.3)]'}`}
+                  >
+                    {/* Verdict + Meter */}
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-10 mb-6">
+                      <ConfidenceMeter
+                        value={scorePercent}
+                        label={isSuspicious ? 'AI Gaze Detected' : 'Natural Gaze'}
+                      />
+                      <div className="text-center sm:text-left">
+                        <div className={`flex items-center justify-center sm:justify-start gap-3 text-3xl font-display font-bold mb-3 ${isSuspicious ? 'text-red-500' : 'text-green-400'}`}>
                           {isSuspicious ? <AlertTriangle className="w-8 h-8" /> : <CheckCircle2 className="w-8 h-8" />}
-                          {result.verdict}
-                        </span>
+                          {isSuspicious ? 'Suspicious' : 'Natural'}
+                        </div>
+                        <p className="text-muted-foreground text-sm max-w-xs">
+                          {isSuspicious
+                            ? 'This content shows signs of AI-manipulated eye gaze patterns.'
+                            : 'The eye gaze patterns appear natural and unmanipulated.'}
+                        </p>
                       </div>
-                      <p className="text-muted-foreground mt-2">Confidence: <span className="text-foreground font-semibold">{result.confidence.toFixed(2)}</span></p>
                     </div>
-                    <div>
-                      <p className="text-xs font-display tracking-widest text-muted-foreground mb-3">SIGNALS</p>
-                      <ul className="space-y-2">
-                        {result.signals.map((s, i) => (
-                          <li key={i} className="flex items-center gap-2 text-sm text-foreground">
-                            <div className={`w-1.5 h-1.5 rounded-full ${isSuspicious ? 'bg-destructive' : 'bg-primary'}`} />
-                            {s}
-                          </li>
-                        ))}
-                      </ul>
+
+                    {/* Details grid */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="glass-card p-4">
+                        <p className="text-sm text-muted-foreground">AI Gaze Detected</p>
+                        <p className={`text-xl font-bold font-display ${isSuspicious ? 'text-red-500' : 'text-green-400'}`}>
+                          {isSuspicious ? 'Yes' : 'No'}
+                        </p>
+                      </div>
+                      <div className="glass-card p-4">
+                        <p className="text-sm text-muted-foreground">Gaze Score</p>
+                        <p className="text-xl font-bold font-display">{scorePercent.toFixed(1)}%</p>
+                      </div>
                     </div>
+
+                    {/* Signals */}
+                    {result.signals && result.signals.length > 0 && (
+                      <div className="mt-6">
+                        <p className="text-xs font-display tracking-widest text-muted-foreground mb-3">SIGNALS</p>
+                        <ul className="space-y-2">
+                          {result.signals.map((s: string, i: number) => (
+                            <li key={i} className="flex items-center gap-2 text-sm text-foreground">
+                              <div className={`w-1.5 h-1.5 rounded-full ${isSuspicious ? 'bg-destructive' : 'bg-primary'}`} />
+                              {s}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
