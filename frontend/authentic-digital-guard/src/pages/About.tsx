@@ -110,7 +110,7 @@ const About = () => (
               <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                 <User className="w-12 h-12 text-muted-foreground" />
               </div>
-              <h3 className="font-display text-lg font-semibold text-foreground mb-2">Developer Name</h3>
+              <h3 className="font-display text-lg font-semibold text-foreground mb-2">AANCHAL JAGGA</h3>
               <p className="text-muted-foreground text-sm leading-relaxed mb-4">
                 Passionate about AI safety and digital trust. Building Authentix to combat the rising tide of synthetic media and protect the integrity of digital communication.
               </p>
