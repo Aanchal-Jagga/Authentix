@@ -158,7 +158,7 @@ const HeroSection = () => {
           transition={{ duration: 0.8, delay: 0.7 }}
           className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed"
         >
-          Advanced AI system that detects deepfakes, voice clones, and suspicious interview behavior in real time.
+          Advanced detection system that identifies deepfakes, verifies text authenticity, and monitors suspicious interview behavior in real time.
         </motion.p>
 
         {/* BUTTONS */}

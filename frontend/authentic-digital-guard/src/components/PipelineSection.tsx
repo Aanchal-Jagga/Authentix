@@ -3,7 +3,7 @@ import { Upload, Brain, Combine, BarChart3, ArrowRight } from 'lucide-react';
 
 const pipelineSteps = [
   { icon: Upload, label: 'Media Input' },
-  { icon: Brain, label: 'AI Analysis' },
+  { icon: Brain, label: 'Model Analysis' },
   { icon: Combine, label: 'Signal Fusion' },
   { icon: BarChart3, label: 'Authenticity Score' },
 ];

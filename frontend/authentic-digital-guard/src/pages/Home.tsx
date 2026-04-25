@@ -1,5 +1,6 @@
 import PageTransition from '@/components/PageTransition';
 import HeroSection from '@/components/HeroSection';
+import SineWave from '@/components/SineWave';
 import ScrollStory from '@/components/ScrollStory';
 import FeaturesSection from '@/components/FeaturesSection';
 import TechSection from '@/components/TechSection';
@@ -13,6 +14,9 @@ const Home = () => (
     <FeaturesSection />
     <TechSection />
     <PipelineSection />
+    <div className="py-8 px-6">
+      <SineWave status="idle" height={80} />
+    </div>
     <div className="section-padding text-center">
       <h2 className="font-display text-3xl font-bold gradient-text mb-6">Ready to Protect Digital Trust?</h2>
       <a href="/image-detection" className="glow-button inline-block">Get Started</a>

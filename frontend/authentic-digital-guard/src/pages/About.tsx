@@ -12,7 +12,7 @@ const useCases = [
 
 const pipeline = [
   { icon: Upload, label: 'Input Media' },
-  { icon: Brain, label: 'AI Analysis' },
+  { icon: Brain, label: 'Model Analysis' },
   { icon: Combine, label: 'Signal Fusion' },
   { icon: BarChart3, label: 'Authenticity Result' },
 ];
@@ -48,6 +48,10 @@ const About = () => (
               <div className="glass-card p-6">
                 <h3 className="font-display text-lg text-primary mb-2">Browser Extension Monitoring</h3>
                 <p>The Authentix browser extension monitors video calls in real time, detecting deepfake participants, manipulated feeds, and suspicious behaviour patterns.</p>
+              </div>
+              <div className="glass-card p-6">
+                <h3 className="font-display text-lg text-primary mb-2">Text Verification &amp; Fake News Detection</h3>
+                <p>Our AI-powered text analysis engine fact-checks claims, detects misinformation, and identifies AI-generated text by cross-referencing trusted sources and analyzing linguistic patterns.</p>
               </div>
             </div>
           </motion.div>

@@ -6,6 +6,7 @@ import ScanAnimation from '@/components/ScanAnimation';
 import ErrorCard from '@/components/ErrorCard';
 import Footer from '@/components/Footer';
 import { verifyText } from '@/services/api';
+import SineWave from '@/components/SineWave';
 
 const TextVerification = () => {
   const [text, setText] = useState('');
@@ -44,7 +45,21 @@ const TextVerification = () => {
 
   return (
     <PageTransition>
-      <div className="min-h-screen pt-24">
+      <div className="min-h-screen pt-24 relative">
+
+        {/* SINE WAVE BACKGROUND */}
+        <div className="fixed inset-x-0 bottom-0 h-[250px] pointer-events-none z-0 opacity-70">
+          <SineWave
+            status={
+              !result || scanning
+                ? 'idle'
+                : (verdictText.toLowerCase().includes('true') || verdictText.toLowerCase().includes('real') || verdictText.toLowerCase().includes('verified') || verdictText.toLowerCase().includes('accurate'))
+                  ? 'real'
+                  : 'deepfake'
+            }
+            height={200}
+          />
+        </div>
         <section className="section-padding">
           <div className="max-w-3xl mx-auto">
 

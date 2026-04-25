@@ -8,6 +8,7 @@ import ConfidenceMeter from '@/components/ConfidenceMeter';
 import ErrorCard from '@/components/ErrorCard';
 import Footer from '@/components/Footer';
 import { detectGazeFrame, detectGazeVideo } from '@/services/api';
+import SineWave from '@/components/SineWave';
 
 const GazeDetection = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -43,7 +44,21 @@ const GazeDetection = () => {
 
   return (
     <PageTransition>
-      <div className="min-h-screen pt-24">
+      <div className="min-h-screen pt-24 relative">
+
+        {/* SINE WAVE BACKGROUND */}
+        <div className="fixed inset-x-0 bottom-0 h-[250px] pointer-events-none z-0 opacity-70">
+          <SineWave
+            status={
+              !result || scanning
+                ? 'idle'
+                : result.ai_gaze_detected
+                  ? 'deepfake'
+                  : 'real'
+            }
+            height={200}
+          />
+        </div>
         <section className="section-padding">
           <div className="max-w-3xl mx-auto">
             <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">

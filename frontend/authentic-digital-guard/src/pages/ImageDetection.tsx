@@ -8,6 +8,7 @@ import ResultCard from '@/components/ResultCard';
 import ErrorCard from '@/components/ErrorCard';
 import Footer from '@/components/Footer';
 import { analyzeImage } from '@/services/api';
+import SineWave from '@/components/SineWave';
 
 const ImageDetection = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -43,7 +44,23 @@ const ImageDetection = () => {
 
   return (
     <PageTransition>
-      <div className="min-h-screen pt-24">
+      <div className="min-h-screen pt-24 relative">
+
+        {/* SINE WAVE BACKGROUND */}
+        <div className="fixed inset-x-0 bottom-0 h-[250px] pointer-events-none z-0 opacity-70">
+          <SineWave
+            status={
+              !result || scanning
+                ? 'idle'
+                : result.verdict === 'REAL'
+                  ? 'real'
+                  : result.verdict === 'DEEPFAKE'
+                    ? 'deepfake'
+                    : 'ai'
+            }
+            height={200}
+          />
+        </div>
 
         <section className="section-padding">
           <div className="max-w-3xl mx-auto">

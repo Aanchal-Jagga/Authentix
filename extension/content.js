@@ -1,5 +1,82 @@
-const API_URL = "http://127.0.0.1:8000/api/analyze/url";
 const scanned = new WeakSet();
+
+// ── Request queue to avoid overwhelming the backend ──
+const queue = [];
+let activeRequests = 0;
+const MAX_CONCURRENT = 2;
+
+function processQueue() {
+  while (activeRequests < MAX_CONCURRENT && queue.length > 0) {
+    const { img, badge } = queue.shift();
+    activeRequests++;
+
+    // Convert image to blob via canvas, then send to background
+    imageToBlob(img)
+      .then((dataUrl) => {
+        chrome.runtime.sendMessage(
+          { type: "ANALYZE_IMAGE_BLOB", dataUrl },
+          (response) => {
+            activeRequests--;
+            processQueue();
+
+            if (chrome.runtime.lastError) {
+              console.error("Authentix error:", chrome.runtime.lastError.message);
+              badge.textContent = "❌ Extension error";
+              badge.className = "authentix-badge highrisk";
+              return;
+            }
+            if (response && response.success) {
+              updateBadge(badge, response.data);
+            } else {
+              badge.textContent = `❌ ${(response && response.error) || "Backend offline"}`;
+              badge.className = "authentix-badge highrisk";
+            }
+          }
+        );
+      })
+      .catch((err) => {
+        activeRequests--;
+        processQueue();
+        console.error("Authentix canvas error:", err);
+        badge.textContent = "❌ Canvas error";
+        badge.className = "authentix-badge highrisk";
+      });
+  }
+}
+
+// ── Convert <img> to data URL via canvas ──
+
+function imageToBlob(img) {
+  return new Promise((resolve, reject) => {
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+      resolve(dataUrl);
+    } catch (e) {
+      // CORS — fallback: try fetching the image directly
+      const url = img.currentSrc || img.src;
+      if (!url || url.startsWith("data:")) {
+        reject(e);
+        return;
+      }
+      fetch(url)
+        .then((r) => r.blob())
+        .then((blob) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = () => reject(e);
+          reader.readAsDataURL(blob);
+        })
+        .catch(() => reject(e));
+    }
+  });
+}
+
+// ── Helpers ──
 
 function createBadge(text, type) {
   const badge = document.createElement("div");
@@ -8,11 +85,9 @@ function createBadge(text, type) {
   return badge;
 }
 
-function getImageUrl(img) {
-  return img.currentSrc || img.src;
-}
+// ── Analyze a single image ──
 
-async function analyzeImage(img) {
+function analyzeImage(img) {
   try {
     if (!img || scanned.has(img)) return;
     if (!img.complete) return;
@@ -28,20 +103,15 @@ async function analyzeImage(img) {
     const badge = createBadge("Authentix: Scanning...", "processing");
     wrapper.appendChild(badge);
 
-    const url = getImageUrl(img);
-
-    const apiResp = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url }),
-    });
-
-    const result = await apiResp.json();
-    updateBadge(badge, result);
+    // Add to queue
+    queue.push({ img, badge });
+    processQueue();
   } catch (err) {
     console.error("Authentix error:", err);
   }
 }
+
+// ── Update badge with result ──
 
 function updateBadge(badge, result) {
   const label = (result.label || "UNKNOWN").toUpperCase();
@@ -51,7 +121,13 @@ function updateBadge(badge, result) {
   let badgeText = "";
   let badgeClass = "safe";
 
-  if (label === "DEEPFAKE" || label === "FAKE") {
+  if (label === "ERROR") {
+    badgeText = `❌ ${result.error || "Analysis failed"}`;
+    badgeClass = "highrisk";
+  } else if (label === "SKIPPED") {
+    badgeText = `⏭️ Skipped`;
+    badgeClass = "review";
+  } else if (label === "DEEPFAKE" || label === "FAKE") {
     badgeText = `🔴 Deepfake (${confidence})`;
     badgeClass = "highrisk";
   } else if (label === "AI_GENERATED") {
@@ -69,21 +145,14 @@ function updateBadge(badge, result) {
   badge.className = `authentix-badge ${badgeClass}`;
 }
 
-// Listen for messages from background script (context menu)
+// ── Listen for messages from background script (context menu) ──
+
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === "AUTHENTIX_ANALYZE") {
-    // Find the image by URL and show scanning badge
     const imgs = document.querySelectorAll("img");
     imgs.forEach((img) => {
       if ((img.currentSrc || img.src) === msg.url && !scanned.has(img)) {
-        scanned.add(img);
-        const wrapper = document.createElement("span");
-        wrapper.className = "authentix-wrapper";
-        wrapper.dataset.authentixUrl = msg.url;
-        img.parentNode.insertBefore(wrapper, img);
-        wrapper.appendChild(img);
-        const badge = createBadge("Authentix: Scanning...", "processing");
-        wrapper.appendChild(badge);
+        analyzeImage(img);
       }
     });
   }
@@ -107,7 +176,8 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 });
 
-// Auto-scan images on page
+// ── Auto-scan images on page ──
+
 function scanImages() {
   document.querySelectorAll("img").forEach((img) => analyzeImage(img));
 }

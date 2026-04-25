@@ -1,11 +1,11 @@
 import { motion } from 'framer-motion';
-import { Cpu, Brain, Eye, AudioLines, Combine } from 'lucide-react';
+import { Cpu, Brain, Eye, FileSearch, Combine } from 'lucide-react';
 
 const techs = [
   { icon: Eye, label: 'Computer Vision' },
   { icon: Brain, label: 'Deep Learning' },
   { icon: Cpu, label: 'Behavioral Analysis' },
-  { icon: AudioLines, label: 'Audio Signal Processing' },
+  { icon: FileSearch, label: 'Text Analysis' },
   { icon: Combine, label: 'Multi-Signal Fusion AI' },
 ];
 
@@ -18,7 +18,7 @@ const TechSection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <h2 className="font-display text-3xl sm:text-4xl font-bold gradient-text mb-4">Powered By</h2>
+          <h2 className="font-display text-3xl sm:text-4xl font-bold gradient-text mb-4">Technology Stack</h2>
           <p className="text-muted-foreground mb-16">Cutting-edge AI technologies working in harmony.</p>
         </motion.div>
 

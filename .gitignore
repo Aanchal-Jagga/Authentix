@@ -28,3 +28,9 @@ flowgenix-beeb3-firebase-adminsdk-fbsvc-174e1fa766.json
 
 # Firebase service account (DO NOT push)
 serviceAccountKey.json
+
+backend/weights/
+*.pt
+*.pth
+*.torchscript
+.venv/

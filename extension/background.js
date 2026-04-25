@@ -1,4 +1,5 @@
 // Authentix Background Service Worker
+const API_URL_IMAGE = "http://127.0.0.1:8000/api/analyze/image";
 const API_URL = "http://127.0.0.1:8000/api/analyze/url";
 
 // Create context menu on install
@@ -10,15 +11,13 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-// Handle context menu click
+// Handle context menu click — still uses URL for single right-click analysis
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId === "authentix-analyze" && info.srcUrl && tab?.id) {
-    // Store loading state
     await chrome.storage.local.set({
       lastResult: { status: "scanning", url: info.srcUrl },
     });
 
-    // Send message to content script to show badge
     chrome.tabs.sendMessage(tab.id, {
       type: "AUTHENTIX_ANALYZE",
       url: info.srcUrl,
@@ -43,7 +42,6 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
       await chrome.storage.local.set({ lastResult: result });
 
-      // Send result to content script
       chrome.tabs.sendMessage(tab.id, {
         type: "AUTHENTIX_RESULT",
         result,
@@ -62,5 +60,42 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         result: errorResult,
       });
     }
+  }
+});
+
+// Handle image blob analysis from content script
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.type === "ANALYZE_IMAGE_BLOB" && msg.dataUrl) {
+    // Convert data URL to blob and upload as multipart/form-data
+    fetch(msg.dataUrl)
+      .then((r) => r.blob())
+      .then((blob) => {
+        const formData = new FormData();
+        formData.append("file", blob, "image.jpg");
+
+        return fetch(API_URL_IMAGE, {
+          method: "POST",
+          body: formData,
+        });
+      })
+      .then((resp) => resp.json())
+      .then((data) => sendResponse({ success: true, data }))
+      .catch((err) => sendResponse({ success: false, error: err.message }));
+
+    return true; // keep channel open for async
+  }
+
+  // Legacy: URL-based analysis (for context menu fallback)
+  if (msg.type === "ANALYZE_IMAGE" && msg.url) {
+    fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: msg.url }),
+    })
+      .then((resp) => resp.json())
+      .then((data) => sendResponse({ success: true, data }))
+      .catch((err) => sendResponse({ success: false, error: err.message }));
+
+    return true;
   }
 });
